@@ -41,10 +41,8 @@ export default function App() {
   const [isModalOpen, setIsModalOpen] = useState(false); // 新規/編集モーダルの開閉
   const [activeTab, setActiveTab] = useState('category'); // 初期表示はカテゴリタブに設定
 
-  // フォルダ表示を削除したため、selectedCategory と selectedSource は不要になります
-  // const [selectedCategory, setSelectedCategory] = useState(null);
-  // const [selectedSource, setSelectedSource] = useState(null);
-
+  const [selectedCategory, setSelectedCategory] = useState(null); // 選択されたカテゴリ名 (プルダウン用)
+  const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false); // カテゴリプルダウンの開閉状態
 
   // 保存元タイプの定義 (inputTypeのselectオプションと一致させる)
   const sourceTypes = [
@@ -162,12 +160,8 @@ export default function App() {
     setDate(item.date ? item.date.toDate().toISOString().slice(0, 10) : '');
     setEditingId(item.id);
     setIsModalOpen(true); // 新規/編集モーダルを開く
-    // アイテム一覧モーダルが開いている場合は閉じる処理は、モーダル削除のため不要になりました
-    // setSelectedCategory(null);
-    // setSelectedSource(null);
   };
 
-  // groupedByCategory と filteredByDate は、そのまま残しておきます（カレンダー機能で使用）
   const groupedByCategory = categories.map(cat => ({
     name: cat,
     items: results.filter(r => r.category === cat)
@@ -180,7 +174,7 @@ export default function App() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50 text-base"> {/* 全体サイズ調整と背景色 */}
+    <div className="min-h-screen bg-gray-50 text-base">
       {/* ヘッダー部分 */}
       <header className="flex items-center p-4 bg-white shadow-md">
         <div className="flex-grow mr-3">
@@ -188,7 +182,6 @@ export default function App() {
             type="text"
             placeholder="検索"
             className="w-full border p-3 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
-            // 検索機能は未実装なので、必要であればここに追加してください
           />
         </div>
         <button
@@ -200,22 +193,63 @@ export default function App() {
       </header>
 
       {/* タブバー部分 */}
-      <nav className="flex justify-around border-b border-gray-200 bg-white shadow-sm">
+      <nav className="flex justify-around border-b border-gray-200 bg-white shadow-sm relative"> {/* relative を追加 */}
         <button
           className={`flex-1 py-3 text-center transition-colors duration-200 ${activeTab === 'source' ? 'border-b-4 border-blue-500 text-blue-500 font-semibold' : 'text-gray-600 hover:bg-gray-50'}`}
-          onClick={() => setActiveTab('source')}
+          onClick={() => {
+            setActiveTab('source');
+            setSelectedCategory(null); // タブ切り替え時にカテゴリ選択をリセット
+            setIsCategoryDropdownOpen(false); // ドロップダウンを閉じる
+          }}
         >
           保存元
         </button>
-        <button
-          className={`flex-1 py-3 text-center transition-colors duration-200 ${activeTab === 'category' ? 'border-b-4 border-blue-500 text-blue-500 font-semibold' : 'text-gray-600 hover:bg-gray-50'}`}
-          onClick={() => setActiveTab('category')}
-        >
-          カテゴリ
-        </button>
+
+        {/* カテゴリボタンとプルダウン */}
+        <div className="relative flex-1">
+          <button
+            className={`w-full py-3 text-center transition-colors duration-200 ${activeTab === 'category' ? 'border-b-4 border-blue-500 text-blue-500 font-semibold' : 'text-gray-600 hover:bg-gray-50'}`}
+            onClick={() => {
+              setActiveTab('category');
+              setIsCategoryDropdownOpen(!isCategoryDropdownOpen); // クリックで開閉を切り替え
+            }}
+          >
+            {selectedCategory ? selectedCategory : 'カテゴリ'} {/* 選択中のカテゴリ名を表示、なければ「カテゴリ」 */}
+          </button>
+          {isCategoryDropdownOpen && activeTab === 'category' && (
+            <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 shadow-lg z-10 rounded-b-md">
+              <div
+                className="py-2 px-4 cursor-pointer hover:bg-gray-100 border-b border-gray-100"
+                onClick={() => {
+                  setSelectedCategory(null); // 「すべて」を選択
+                  setIsCategoryDropdownOpen(false);
+                }}
+              >
+                すべてのカテゴリ
+              </div>
+              {categories.map(catName => (
+                <div
+                  key={catName}
+                  className="py-2 px-4 cursor-pointer hover:bg-gray-100 border-b border-gray-100 last:border-b-0"
+                  onClick={() => {
+                    setSelectedCategory(catName);
+                    setIsCategoryDropdownOpen(false); // 選択したら閉じる
+                  }}
+                >
+                  {catName}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         <button
           className={`flex-1 py-3 text-center transition-colors duration-200 ${activeTab === 'calendar' ? 'border-b-4 border-blue-500 text-blue-500 font-semibold' : 'text-gray-600 hover:bg-gray-50'}`}
-          onClick={() => setActiveTab('calendar')}
+          onClick={() => {
+            setActiveTab('calendar');
+            setSelectedCategory(null); // タブ切り替え時にカテゴリ選択をリセット
+            setIsCategoryDropdownOpen(false); // ドロップダウンを閉じる
+          }}
         >
           カレンダー
         </button>
@@ -253,31 +287,45 @@ export default function App() {
           </div>
         )}
 
-        {/* カテゴリまたは保存元タブが選択された場合の共通アイテム表示 */}
+        {/* カテゴリまたは保存元タブが選択された場合のアイテム表示 */}
         {(activeTab === 'category' || activeTab === 'source') && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {results.map(item => ( // すべてのアイテムをそのまま表示します
-              <div key={item.id} className="border p-4 rounded-lg shadow-sm bg-white">
-                <img src={getThumbnail(item.content)} className="w-full h-32 object-contain mb-2 rounded" alt="Thumbnail" />
-                <div className="font-semibold text-gray-800">{item.category}（{item.type}）</div>
-                <div className="truncate text-sm text-gray-700 mb-1">
-                  {item.type === 'url' ? (
-                    <a href={item.content} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                      {item.content}
-                    </a>
-                  ) : (
-                    item.content
-                  )}
+            {results
+              .filter(item => {
+                // activeTabがcategoryの場合、selectedCategoryに基づいてフィルタリング
+                if (activeTab === 'category') {
+                  // selectedCategoryがnull（「すべてのカテゴリ」）の場合は、フィルタリングしない（すべて表示）
+                  if (selectedCategory === null) {
+                    return true;
+                  }
+                  // 特定のカテゴリが選択されている場合は、そのカテゴリに一致するアイテムのみ表示
+                  return item.category === selectedCategory;
+                }
+                // activeTabがsourceの場合は、フィルタリングなしで全件表示
+                return true;
+              })
+              .map(item => (
+                <div key={item.id} className="border p-4 rounded-lg shadow-sm bg-white">
+                  <img src={getThumbnail(item.content)} className="w-full h-32 object-contain mb-2 rounded" alt="Thumbnail" />
+                  <div className="font-semibold text-gray-800">{item.category}（{item.type}）</div>
+                  <div className="truncate text-sm text-gray-700 mb-1">
+                    {item.type === 'url' ? (
+                      <a href={item.content} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                        {item.content}
+                      </a>
+                    ) : (
+                      item.content
+                    )}
+                  </div>
+                  {item.date && <div className="text-xs text-gray-600 mt-1">日時: {formatDateOnly(item.date)}</div>}
+                  {item.createdAt && <div className="text-xs text-gray-500">保存日時: {formatTimestamp(item.createdAt)}</div>}
+                  <div className="mt-3 flex justify-between items-center">
+                    <button onClick={() => startEdit(item)} className="text-blue-600 text-sm hover:underline">編集</button>
+                    <button onClick={() => deleteItem(item.id)} className="text-red-500 text-sm hover:underline">削除</button>
+                    <button onClick={() => toggleFavorite(item.id, item.favorite)} className="text-xl">{item.favorite ? '★' : '☆'}</button>
+                  </div>
                 </div>
-                {item.date && <div className="text-xs text-gray-600 mt-1">日時: {formatDateOnly(item.date)}</div>}
-                {item.createdAt && <div className="text-xs text-gray-500">保存日時: {formatTimestamp(item.createdAt)}</div>}
-                <div className="mt-3 flex justify-between items-center">
-                  <button onClick={() => startEdit(item)} className="text-blue-600 text-sm hover:underline">編集</button>
-                  <button onClick={() => deleteItem(item.id)} className="text-red-500 text-sm hover:underline">削除</button>
-                  <button onClick={() => toggleFavorite(item.id, item.favorite)} className="text-xl">{item.favorite ? '★' : '☆'}</button>
-                </div>
-              </div>
-            ))}
+              ))}
           </div>
         )}
       </main>
@@ -316,10 +364,6 @@ export default function App() {
           </div>
         </div>
       )}
-
-      {/* アイテム一覧表示モーダルは削除されたため、ここには何も表示されません */}
-      {/* {(selectedCategory || selectedSource) && ( ... )} のブロックを削除済み */}
-
     </div>
   );
 }
