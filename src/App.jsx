@@ -41,8 +41,9 @@ export default function App() {
   const [isModalOpen, setIsModalOpen] = useState(false); // 新規/編集モーダルの開閉
   const [activeTab, setActiveTab] = useState('category'); // 初期表示はカテゴリタブに設定
 
-  const [selectedCategory, setSelectedCategory] = useState(null); // 選択されたカテゴリ名 (アイテム表示用)
-  const [selectedSource, setSelectedSource] = useState(null);     // 選択された保存元タイプ (アイテム表示用)
+  // フォルダ表示を削除したため、selectedCategory と selectedSource は不要になります
+  // const [selectedCategory, setSelectedCategory] = useState(null);
+  // const [selectedSource, setSelectedSource] = useState(null);
 
 
   // 保存元タイプの定義 (inputTypeのselectオプションと一致させる)
@@ -161,11 +162,12 @@ export default function App() {
     setDate(item.date ? item.date.toDate().toISOString().slice(0, 10) : '');
     setEditingId(item.id);
     setIsModalOpen(true); // 新規/編集モーダルを開く
-    // アイテム一覧モーダルが開いている場合は閉じる
-    setSelectedCategory(null);
-    setSelectedSource(null);
+    // アイテム一覧モーダルが開いている場合は閉じる処理は、モーダル削除のため不要になりました
+    // setSelectedCategory(null);
+    // setSelectedSource(null);
   };
 
+  // groupedByCategory と filteredByDate は、そのまま残しておきます（カレンダー機能で使用）
   const groupedByCategory = categories.map(cat => ({
     name: cat,
     items: results.filter(r => r.category === cat)
@@ -251,41 +253,29 @@ export default function App() {
           </div>
         )}
 
-        {/* カテゴリ表示タブ - フォルダ形式 */}
-        {activeTab === 'category' && (
-          <div className="grid grid-cols-3 gap-2 p-1"> {/* 横3列、gap-2, p-1 に変更 */}
-            {categories.map(catName => (
-              <div
-                key={catName}
-                className="border p-1 rounded-lg shadow-sm bg-white flex flex-col items-center justify-center h-20 cursor-pointer hover:bg-gray-50 transition-colors duration-200" // h-20, p-1 に変更
-                onClick={() => setSelectedCategory(catName)}
-              >
-                {/* フォルダアイコン */}
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-400 mb-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"> {/* h-8 w-8 に変更 */}
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                </svg>
-                <h3 className="font-bold text-xs text-gray-800 text-center truncate w-full px-1">{catName}</h3> {/* text-xs, truncate, px-1 に変更 */}
-                <span className="text-[0.6rem] text-gray-500">{results.filter(r => r.category === catName).length}件</span> {/* text-[0.6rem] に変更 */}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* 保存元表示タブ - フォルダ形式 */}
-        {activeTab === 'source' && (
-          <div className="grid grid-cols-3 gap-2 p-1"> {/* 横3列、gap-2, p-1 に変更 */}
-            {sourceTypes.map(source => (
-              <div
-                key={source.value}
-                className="border p-1 rounded-lg shadow-sm bg-white flex flex-col items-center justify-center h-20 cursor-pointer hover:bg-gray-50 transition-colors duration-200" // h-20, p-1 に変更
-                onClick={() => setSelectedSource(source.value)}
-              >
-                {/* フォルダアイコン */}
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-gray-400 mb-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"> {/* h-8 w-8 に変更 */}
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
-                </svg>
-                <h3 className="font-bold text-xs text-gray-800 text-center truncate w-full px-1">{source.label}</h3> {/* text-xs, truncate, px-1 に変更 */}
-                <span className="text-[0.6rem] text-gray-500">{results.filter(r => r.type === source.value).length}件</span> {/* text-[0.6rem] に変更 */}
+        {/* カテゴリまたは保存元タブが選択された場合の共通アイテム表示 */}
+        {(activeTab === 'category' || activeTab === 'source') && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {results.map(item => ( // すべてのアイテムをそのまま表示します
+              <div key={item.id} className="border p-4 rounded-lg shadow-sm bg-white">
+                <img src={getThumbnail(item.content)} className="w-full h-32 object-contain mb-2 rounded" alt="Thumbnail" />
+                <div className="font-semibold text-gray-800">{item.category}（{item.type}）</div>
+                <div className="truncate text-sm text-gray-700 mb-1">
+                  {item.type === 'url' ? (
+                    <a href={item.content} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                      {item.content}
+                    </a>
+                  ) : (
+                    item.content
+                  )}
+                </div>
+                {item.date && <div className="text-xs text-gray-600 mt-1">日時: {formatDateOnly(item.date)}</div>}
+                {item.createdAt && <div className="text-xs text-gray-500">保存日時: {formatTimestamp(item.createdAt)}</div>}
+                <div className="mt-3 flex justify-between items-center">
+                  <button onClick={() => startEdit(item)} className="text-blue-600 text-sm hover:underline">編集</button>
+                  <button onClick={() => deleteItem(item.id)} className="text-red-500 text-sm hover:underline">削除</button>
+                  <button onClick={() => toggleFavorite(item.id, item.favorite)} className="text-xl">{item.favorite ? '★' : '☆'}</button>
+                </div>
               </div>
             ))}
           </div>
@@ -327,54 +317,9 @@ export default function App() {
         </div>
       )}
 
-      {/* アイテム一覧表示モーダル */}
-      {(selectedCategory || selectedSource) && (
-        <div className="fixed inset-x-0 bottom-0 h-full bg-white border-t p-4 space-y-4 z-50 shadow-lg overflow-y-auto">
-          <div className="flex items-center justify-between pb-3 border-b">
-            <h2 className="text-xl font-bold">
-              {selectedCategory ? selectedCategory : sourceTypes.find(s => s.value === selectedSource)?.label}
-              のアイテム
-            </h2>
-            <button
-              onClick={() => {
-                setSelectedCategory(null);
-                setSelectedSource(null);
-              }}
-              className="text-gray-500 hover:text-gray-700 text-3xl"
-            >
-              &times;
-            </button>
-          </div>
+      {/* アイテム一覧表示モーダルは削除されたため、ここには何も表示されません */}
+      {/* {(selectedCategory || selectedSource) && ( ... )} のブロックを削除済み */}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {(selectedCategory
-              ? results.filter(item => item.category === selectedCategory)
-              : results.filter(item => item.type === selectedSource)
-            ).map(item => (
-              <div key={item.id} className="border p-4 rounded-lg shadow-sm bg-white">
-                <img src={getThumbnail(item.content)} className="w-full h-32 object-contain mb-2 rounded" alt="Thumbnail" />
-                <div className="font-semibold text-gray-800">{item.category}（{item.type}）</div>
-                <div className="truncate text-sm text-gray-700 mb-1">
-                  {item.type === 'url' ? (
-                    <a href={item.content} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                      {item.content}
-                    </a>
-                  ) : (
-                    item.content
-                  )}
-                </div>
-                {item.date && <div className="text-xs text-gray-600 mt-1">日時: {formatDateOnly(item.date)}</div>}
-                {item.createdAt && <div className="text-xs text-gray-500">保存日時: {formatTimestamp(item.createdAt)}</div>}
-                <div className="mt-3 flex justify-between items-center">
-                  <button onClick={() => startEdit(item)} className="text-blue-600 text-sm hover:underline">編集</button>
-                  <button onClick={() => deleteItem(item.id)} className="text-red-500 text-sm hover:underline">削除</button>
-                  <button onClick={() => toggleFavorite(item.id, item.favorite)} className="text-xl">{item.favorite ? '★' : '☆'}</button>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
