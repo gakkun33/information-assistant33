@@ -78,6 +78,24 @@ export default function App() {
     minute: '2-digit'
   });
 };
+
+  const formatDateOnly = (timestamp) => {
+  if (!timestamp) return '';
+  const date = timestamp.toDate();
+  // YYYY/MM/DD 形式で返す
+  return date.toLocaleDateString('ja-JP', { year: 'numeric', month: 'numeric', day: 'numeric' });
+};
+
+// startEdit 関数の修正
+const startEdit = (item) => {
+  setInputType(item.type);
+  setContent(item.content);
+  setCategory(item.category);
+  // ここを修正: item.dateがTimestampならtoDate()してISO形式にする
+  setDate(item.date ? item.date.toDate().toISOString().slice(0, 10) : ''); // ここが重要
+  setEditingId(item.id);
+  setIsModalOpen(true);
+};
   
   const saveData = async () => {
     if (!content || !category) return alert('内容とカテゴリを入力してください');
@@ -151,42 +169,50 @@ export default function App() {
         <button className={activeTab === 'calendar' ? 'border-b-2 border-black px-4 py-2' : 'px-4 py-2'} onClick={() => setActiveTab('calendar')}>カレンダー</button>
       </div>
 
-      {activeTab === 'calendar' && (
-        <div>
-          <Calendar value={calendarDate} onChange={setCalendarDate} className="mb-4" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {filteredByDate.map(item => (
-              <div key={item.id} className="border p-4 rounded">
-                <img src={getThumbnail(item.content)} className="w-full h-32 object-contain" />
-                <div className="font-semibold">{item.category}（{item.type}）</div>
-                <div className="truncate text-sm">{item.content}</div>
-                {item.createdAt && <div className="text-xs text-gray-500 mt-1">保存日時: {formatTimestamp(item.createdAt)}</div>}
-              </div>
-            ))}
-          </div>
+    // ...
+{activeTab === 'calendar' && (
+  <div>
+    <Calendar value={calendarDate} onChange={setCalendarDate} className="mb-4" />
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {filteredByDate.map(item => (
+        <div key={item.id} className="border p-4 rounded">
+          <img src={getThumbnail(item.content)} className="w-full h-32 object-contain" alt="Thumbnail" />
+          <div className="font-semibold">{item.category}（{item.type}）</div>
+          <div className="truncate text-sm">{item.content}</div>
+          {/* 指定された日時を表示 */}
+          {item.date && <div className="text-xs text-gray-700 mt-1">日時: {formatDateOnly(item.date)}</div>} {/* ここを修正 */}
+          {item.createdAt && <div className="text-xs text-gray-500 mt-1">保存日時: {formatTimestamp(item.createdAt)}</div>}
         </div>
-      )}
+      ))}
+    </div>
+  </div>
+)}
+// ...
 
-      {activeTab === 'category' && groupedByCategory.map(group => (
-        <div key={group.name} className="mb-6">
-          <h3 className="font-bold text-lg mb-2">{group.name}</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {group.items.map(item => (
-              <div key={item.id} className="border p-4 rounded">
-                <img src={getThumbnail(item.content)} className="w-full h-32 object-contain" />
-                <div className="font-semibold">{item.type}</div>
-                <div className="truncate text-sm">{item.content}</div>
-                {item.createdAt && <div className="text-xs text-gray-500 mt-1">保存日時: {formatTimestamp(item.createdAt)}</div>}
-                <div className="mt-2 flex justify-between">
-                  <button onClick={() => startEdit(item)} className="text-blue-600">編集</button>
-                  <button onClick={() => deleteItem(item.id)} className="text-red-500">削除</button>
-                  <button onClick={() => toggleFavorite(item.id, item.favorite)}>{item.favorite ? '★' : '☆'}</button>
-                </div>
-              </div>
-            ))}
+      // ...
+{activeTab === 'category' && groupedByCategory.map(group => (
+  <div key={group.name} className="mb-6">
+    <h3 className="font-bold text-lg mb-2">{group.name}</h3>
+    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      {group.items.map(item => (
+        <div key={item.id} className="border p-4 rounded">
+          <img src={getThumbnail(item.content)} className="w-full h-32 object-contain" alt="Thumbnail" />
+          <div className="font-semibold">{item.type}</div>
+          <div className="truncate text-sm">{item.content}</div>
+          {/* 指定された日時を表示 */}
+          {item.date && <div className="text-xs text-gray-700 mt-1">日時: {formatDateOnly(item.date)}</div>} {/* ここを修正 */}
+          {item.createdAt && <div className="text-xs text-gray-500 mt-1">保存日時: {formatTimestamp(item.createdAt)}</div>}
+          <div className="mt-2 flex justify-between">
+            <button onClick={() => startEdit(item)} className="text-blue-600">編集</button>
+            <button onClick={() => deleteItem(item.id)} className="text-red-500">削除</button>
+            <button onClick={() => toggleFavorite(item.id, item.favorite)}>{item.favorite ? '★' : '☆'}</button>
           </div>
         </div>
       ))}
+    </div>
+  </div>
+))}
+// ...
 
       {isModalOpen && (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-6 space-y-4 z-50">
