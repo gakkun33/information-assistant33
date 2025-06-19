@@ -33,3 +33,11 @@ export default function App() {
     <div className="p-4 text-xl">Link Manager App Ready. Please configure Firebase and add logic.</div>
   );
 }
+const firebaseConfig = {
+  apiKey: "AIzaSyB1kZl3nvohEa35-lv6LPIm2brWRxTn4f0",
+  authDomain: "infomation-assistant33.firebaseapp.com",
+  projectId: "infomation-assistant33",
+  storageBucket: "infomation-assistant33.firebasestorage.app",
+  messagingSenderId: "993568139699",
+  appId: "1:993568139699:web:23dfba10652490661f03c6"
+};
