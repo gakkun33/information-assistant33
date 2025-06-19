@@ -31,10 +31,11 @@ export default function App() {
   const [inputType, setInputType] = useState('text');
   const [content, setContent] = useState('');
   const [category, setCategory] = useState('');
-  const [date, setDate] = useState('');
+  const [date, setDate] = useState(''); // 保存時に指定する日付
   const [results, setResults] = useState([]);
   const [categories, setCategories] = useState([]);
   const [calendarDate, setCalendarDate] = useState(new Date());
+  const [newCategoryName, setNewCategoryName] = useState(''); // 新しいカテゴリ名用
 
   const [editingId, setEditingId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -49,6 +50,22 @@ export default function App() {
     const snapshot = await getDocs(collection(db, 'categories'));
     const items = snapshot.docs.map(doc => doc.data().name);
     setCategories(items);
+  };
+
+  const addCategory = async () => {
+    if (!newCategoryName.trim()) {
+      alert('カテゴリ名を入力してください');
+      return;
+    }
+    try {
+      await addDoc(collection(db, 'categories'), { name: newCategoryName.trim() });
+      setNewCategoryName('');
+      fetchCategories();
+      alert('カテゴリを追加しました！');
+    } catch (error) {
+      console.error("Error adding category: ", error);
+      alert('カテゴリの追加に失敗しました。');
+    }
   };
 
   const fetchData = async () => {
@@ -67,44 +84,34 @@ export default function App() {
     }
   };
 
+  // 保存日時（createdAt）表示用
   const formatTimestamp = (timestamp) => {
-  if (!timestamp) return '';
-  const date = timestamp.toDate(); // Firebase TimestampをJavaScriptのDateオブジェクトに変換
-  return date.toLocaleDateString('ja-JP', { // 日本語ロケールで日付をフォーマット
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
-};
+    if (!timestamp) return '';
+    const date = timestamp.toDate();
+    return date.toLocaleDateString('ja-JP', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
 
+  // 指定日時（date）表示用
   const formatDateOnly = (timestamp) => {
-  if (!timestamp) return '';
-  const date = timestamp.toDate();
-  // YYYY/MM/DD 形式で返す
-  return date.toLocaleDateString('ja-JP', { year: 'numeric', month: 'numeric', day: 'numeric' });
-};
+    if (!timestamp) return '';
+    const date = timestamp.toDate();
+    return date.toLocaleDateString('ja-JP', { year: 'numeric', month: 'numeric', day: 'numeric' });
+  };
 
-// startEdit 関数の修正
-const startEdit = (item) => {
-  setInputType(item.type);
-  setContent(item.content);
-  setCategory(item.category);
-  // ここを修正: item.dateがTimestampならtoDate()してISO形式にする
-  setDate(item.date ? item.date.toDate().toISOString().slice(0, 10) : ''); // ここが重要
-  setEditingId(item.id);
-  setIsModalOpen(true);
-};
-  
   const saveData = async () => {
     if (!content || !category) return alert('内容とカテゴリを入力してください');
     const payload = {
       content,
       type: inputType,
       category,
-      date: date ? Timestamp.fromDate(new Date(date)) : null,
-      createdAt: Timestamp.now(),
+      date: date ? Timestamp.fromDate(new Date(date)) : null, // カレンダーで選択した日付を保存
+      createdAt: Timestamp.now(), // データが保存された日時
       favorite: false
     };
     if (editingId) {
@@ -132,11 +139,13 @@ const startEdit = (item) => {
     }
   };
 
+  // 編集開始時にフォームにデータをロードする関数
   const startEdit = (item) => {
     setInputType(item.type);
     setContent(item.content);
     setCategory(item.category);
-    setDate(item.date?.toDate().toISOString().slice(0, 10) || '');
+    // item.dateがTimestampならtoDate()してISO形式にする
+    setDate(item.date ? item.date.toDate().toISOString().slice(0, 10) : '');
     setEditingId(item.id);
     setIsModalOpen(true);
   };
@@ -169,50 +178,44 @@ const startEdit = (item) => {
         <button className={activeTab === 'calendar' ? 'border-b-2 border-black px-4 py-2' : 'px-4 py-2'} onClick={() => setActiveTab('calendar')}>カレンダー</button>
       </div>
 
-    // ...
-{activeTab === 'calendar' && (
-  <div>
-    <Calendar value={calendarDate} onChange={setCalendarDate} className="mb-4" />
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      {filteredByDate.map(item => (
-        <div key={item.id} className="border p-4 rounded">
-          <img src={getThumbnail(item.content)} className="w-full h-32 object-contain" alt="Thumbnail" />
-          <div className="font-semibold">{item.category}（{item.type}）</div>
-          <div className="truncate text-sm">{item.content}</div>
-          {/* 指定された日時を表示 */}
-          {item.date && <div className="text-xs text-gray-700 mt-1">日時: {formatDateOnly(item.date)}</div>} {/* ここを修正 */}
-          {item.createdAt && <div className="text-xs text-gray-500 mt-1">保存日時: {formatTimestamp(item.createdAt)}</div>}
+      {activeTab === 'calendar' && (
+        <div>
+          <Calendar value={calendarDate} onChange={setCalendarDate} className="mb-4" />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {filteredByDate.map(item => (
+              <div key={item.id} className="border p-4 rounded">
+                <img src={getThumbnail(item.content)} className="w-full h-32 object-contain" alt="Thumbnail" />
+                <div className="font-semibold">{item.category}（{item.type}）</div>
+                <div className="truncate text-sm">{item.content}</div>
+                {item.date && <div className="text-xs text-gray-700 mt-1">日時: {formatDateOnly(item.date)}</div>}
+                {item.createdAt && <div className="text-xs text-gray-500 mt-1">保存日時: {formatTimestamp(item.createdAt)}</div>}
+              </div>
+            ))}
+          </div>
         </div>
-      ))}
-    </div>
-  </div>
-)}
-// ...
+      )}
 
-      // ...
-{activeTab === 'category' && groupedByCategory.map(group => (
-  <div key={group.name} className="mb-6">
-    <h3 className="font-bold text-lg mb-2">{group.name}</h3>
-    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-      {group.items.map(item => (
-        <div key={item.id} className="border p-4 rounded">
-          <img src={getThumbnail(item.content)} className="w-full h-32 object-contain" alt="Thumbnail" />
-          <div className="font-semibold">{item.type}</div>
-          <div className="truncate text-sm">{item.content}</div>
-          {/* 指定された日時を表示 */}
-          {item.date && <div className="text-xs text-gray-700 mt-1">日時: {formatDateOnly(item.date)}</div>} {/* ここを修正 */}
-          {item.createdAt && <div className="text-xs text-gray-500 mt-1">保存日時: {formatTimestamp(item.createdAt)}</div>}
-          <div className="mt-2 flex justify-between">
-            <button onClick={() => startEdit(item)} className="text-blue-600">編集</button>
-            <button onClick={() => deleteItem(item.id)} className="text-red-500">削除</button>
-            <button onClick={() => toggleFavorite(item.id, item.favorite)}>{item.favorite ? '★' : '☆'}</button>
+      {activeTab === 'category' && groupedByCategory.map(group => (
+        <div key={group.name} className="mb-6">
+          <h3 className="font-bold text-lg mb-2">{group.name}</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {group.items.map(item => (
+              <div key={item.id} className="border p-4 rounded">
+                <img src={getThumbnail(item.content)} className="w-full h-32 object-contain" alt="Thumbnail" />
+                <div className="font-semibold">{item.type}</div>
+                <div className="truncate text-sm">{item.content}</div>
+                {item.date && <div className="text-xs text-gray-700 mt-1">日時: {formatDateOnly(item.date)}</div>}
+                {item.createdAt && <div className="text-xs text-gray-500 mt-1">保存日時: {formatTimestamp(item.createdAt)}</div>}
+                <div className="mt-2 flex justify-between">
+                  <button onClick={() => startEdit(item)} className="text-blue-600">編集</button>
+                  <button onClick={() => deleteItem(item.id)} className="text-red-500">削除</button>
+                  <button onClick={() => toggleFavorite(item.id, item.favorite)}>{item.favorite ? '★' : '☆'}</button>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       ))}
-    </div>
-  </div>
-))}
-// ...
 
       {isModalOpen && (
         <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-6 space-y-4 z-50">
@@ -230,6 +233,20 @@ const startEdit = (item) => {
             {categories.map(c => <option key={c}>{c}</option>)}
           </select>
           <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full border rounded p-3" />
+
+          {/* 新しいカテゴリ追加セクション */}
+          <h3 className="text-lg font-semibold mt-4">カテゴリ管理</h3>
+          <div className="flex gap-2">
+            <input
+              type="text"
+              placeholder="新しいカテゴリ名"
+              value={newCategoryName}
+              onChange={e => setNewCategoryName(e.target.value)}
+              className="flex-1 border rounded p-3"
+            />
+            <button onClick={addCategory} className="bg-green-500 text-white py-3 px-4 rounded">追加</button>
+          </div>
+
           <div className="flex gap-2">
             <button onClick={saveData} className="flex-1 bg-blue-600 text-white py-3 rounded">保存</button>
             <button onClick={() => setIsModalOpen(false)} className="flex-1 bg-gray-400 text-white py-3 rounded">キャンセル</button>
