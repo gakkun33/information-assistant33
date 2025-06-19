@@ -160,6 +160,7 @@ export default function App() {
                 <img src={getThumbnail(item.content)} className="w-full h-32 object-contain" />
                 <div className="font-semibold">{item.category}（{item.type}）</div>
                 <div className="truncate text-sm">{item.content}</div>
+                {item.createdAt && <div className="text-xs text-gray-500 mt-1">保存日時: {formatTimestamp(item.createdAt)}</div>}
               </div>
             ))}
           </div>
@@ -175,6 +176,7 @@ export default function App() {
                 <img src={getThumbnail(item.content)} className="w-full h-32 object-contain" />
                 <div className="font-semibold">{item.type}</div>
                 <div className="truncate text-sm">{item.content}</div>
+                {item.createdAt && <div className="text-xs text-gray-500 mt-1">保存日時: {formatTimestamp(item.createdAt)}</div>}
                 <div className="mt-2 flex justify-between">
                   <button onClick={() => startEdit(item)} className="text-blue-600">編集</button>
                   <button onClick={() => deleteItem(item.id)} className="text-red-500">削除</button>
