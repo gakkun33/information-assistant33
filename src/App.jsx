@@ -39,10 +39,13 @@ export default function App() {
 
   const [editingId, setEditingId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false); // 新規/編集モーダルの開閉
-  const [activeTab, setActiveTab] = useState('category'); // 初期表示はカテゴリタブに設定
+  const [activeTab, setActiveTab] = useState('source'); // 初期表示は保存元タブに設定（今回は変更）
 
   const [selectedCategory, setSelectedCategory] = useState(null); // 選択されたカテゴリ名 (プルダウン用)
   const [isCategoryDropdownOpen, setIsCategoryDropdownOpen] = useState(false); // カテゴリプルダウンの開閉状態
+
+  const [selectedSource, setSelectedSource] = useState(null); // 新しく追加：選択された保存元名 (プルダウン用)
+  const [isSourceDropdownOpen, setIsSourceDropdownOpen] = useState(false); // 新しく追加：保存元プルダウンの開閉状態
 
   // 保存元タイプの定義 (inputTypeのselectオプションと一致させる)
   const sourceTypes = [
@@ -193,17 +196,46 @@ export default function App() {
       </header>
 
       {/* タブバー部分 */}
-      <nav className="flex justify-around border-b border-gray-200 bg-white shadow-sm relative"> {/* relative を追加 */}
-        <button
-          className={`flex-1 py-3 text-center transition-colors duration-200 ${activeTab === 'source' ? 'border-b-4 border-blue-500 text-blue-500 font-semibold' : 'text-gray-600 hover:bg-gray-50'}`}
-          onClick={() => {
-            setActiveTab('source');
-            setSelectedCategory(null); // タブ切り替え時にカテゴリ選択をリセット
-            setIsCategoryDropdownOpen(false); // ドロップダウンを閉じる
-          }}
-        >
-          保存元
-        </button>
+      <nav className="flex justify-around border-b border-gray-200 bg-white shadow-sm relative">
+        {/* 保存元ボタンとプルダウン */}
+        <div className="relative flex-1">
+          <button
+            className={`w-full py-3 text-center transition-colors duration-200 ${activeTab === 'source' ? 'border-b-4 border-blue-500 text-blue-500 font-semibold' : 'text-gray-600 hover:bg-gray-50'}`}
+            onClick={() => {
+              setActiveTab('source');
+              setSelectedCategory(null); // 他のタブに切り替えたらカテゴリ選択をリセット
+              setIsCategoryDropdownOpen(false); // 他のドロップダウンを閉じる
+              setIsSourceDropdownOpen(!isSourceDropdownOpen); // クリックで保存元プルダウンの開閉を切り替え
+            }}
+          >
+            {selectedSource ? sourceTypes.find(s => s.value === selectedSource)?.label : '保存元'} {/* 選択中の保存元名を表示 */}
+          </button>
+          {isSourceDropdownOpen && activeTab === 'source' && (
+            <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 shadow-lg z-10 rounded-b-md">
+              <div
+                className="py-2 px-4 cursor-pointer hover:bg-gray-100 border-b border-gray-100"
+                onClick={() => {
+                  setSelectedSource(null); // 「すべて」を選択
+                  setIsSourceDropdownOpen(false);
+                }}
+              >
+                すべての保存元
+              </div>
+              {sourceTypes.map(source => (
+                <div
+                  key={source.value}
+                  className="py-2 px-4 cursor-pointer hover:bg-gray-100 border-b border-gray-100 last:border-b-0"
+                  onClick={() => {
+                    setSelectedSource(source.value);
+                    setIsSourceDropdownOpen(false); // 選択したら閉じる
+                  }}
+                >
+                  {source.label}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
 
         {/* カテゴリボタンとプルダウン */}
         <div className="relative flex-1">
@@ -211,17 +243,19 @@ export default function App() {
             className={`w-full py-3 text-center transition-colors duration-200 ${activeTab === 'category' ? 'border-b-4 border-blue-500 text-blue-500 font-semibold' : 'text-gray-600 hover:bg-gray-50'}`}
             onClick={() => {
               setActiveTab('category');
-              setIsCategoryDropdownOpen(!isCategoryDropdownOpen); // クリックで開閉を切り替え
+              setSelectedSource(null); // 他のタブに切り替えたら保存元選択をリセット
+              setIsSourceDropdownOpen(false); // 他のドロップダウンを閉じる
+              setIsCategoryDropdownOpen(!isCategoryDropdownOpen); // クリックでカテゴリプルダウンの開閉を切り替え
             }}
           >
-            {selectedCategory ? selectedCategory : 'カテゴリ'} {/* 選択中のカテゴリ名を表示、なければ「カテゴリ」 */}
+            {selectedCategory ? selectedCategory : 'カテゴリ'}
           </button>
           {isCategoryDropdownOpen && activeTab === 'category' && (
             <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 shadow-lg z-10 rounded-b-md">
               <div
                 className="py-2 px-4 cursor-pointer hover:bg-gray-100 border-b border-gray-100"
                 onClick={() => {
-                  setSelectedCategory(null); // 「すべて」を選択
+                  setSelectedCategory(null);
                   setIsCategoryDropdownOpen(false);
                 }}
               >
@@ -233,7 +267,7 @@ export default function App() {
                   className="py-2 px-4 cursor-pointer hover:bg-gray-100 border-b border-gray-100 last:border-b-0"
                   onClick={() => {
                     setSelectedCategory(catName);
-                    setIsCategoryDropdownOpen(false); // 選択したら閉じる
+                    setIsCategoryDropdownOpen(false);
                   }}
                 >
                   {catName}
@@ -247,8 +281,10 @@ export default function App() {
           className={`flex-1 py-3 text-center transition-colors duration-200 ${activeTab === 'calendar' ? 'border-b-4 border-blue-500 text-blue-500 font-semibold' : 'text-gray-600 hover:bg-gray-50'}`}
           onClick={() => {
             setActiveTab('calendar');
-            setSelectedCategory(null); // タブ切り替え時にカテゴリ選択をリセット
+            setSelectedCategory(null); // 他のタブに切り替えたらカテゴリ選択をリセット
+            setSelectedSource(null); // 他のタブに切り替えたら保存元選択をリセット
             setIsCategoryDropdownOpen(false); // ドロップダウンを閉じる
+            setIsSourceDropdownOpen(false); // ドロップダウンを閉じる
           }}
         >
           カレンダー
@@ -301,7 +337,16 @@ export default function App() {
                   // 特定のカテゴリが選択されている場合は、そのカテゴリに一致するアイテムのみ表示
                   return item.category === selectedCategory;
                 }
-                // activeTabがsourceの場合は、フィルタリングなしで全件表示
+                // activeTabがsourceの場合、selectedSourceに基づいてフィルタリング
+                if (activeTab === 'source') {
+                  // selectedSourceがnull（「すべての保存元」）の場合は、フィルタリングしない（すべて表示）
+                  if (selectedSource === null) {
+                    return true;
+                  }
+                  // 特定の保存元が選択されている場合は、その保存元に一致するアイテムのみ表示
+                  return item.type === selectedSource;
+                }
+                // それ以外のケース（起こらないはずですが念のため）
                 return true;
               })
               .map(item => (
