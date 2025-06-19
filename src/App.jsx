@@ -67,6 +67,18 @@ export default function App() {
     }
   };
 
+  const formatTimestamp = (timestamp) => {
+  if (!timestamp) return '';
+  const date = timestamp.toDate(); // Firebase TimestampをJavaScriptのDateオブジェクトに変換
+  return date.toLocaleDateString('ja-JP', { // 日本語ロケールで日付をフォーマット
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+};
+  
   const saveData = async () => {
     if (!content || !category) return alert('内容とカテゴリを入力してください');
     const payload = {
