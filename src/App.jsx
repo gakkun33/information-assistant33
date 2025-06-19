@@ -39,7 +39,16 @@ export default function App() {
 
   const [editingId, setEditingId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState('category');
+  const [activeTab, setActiveTab] = useState('category'); // 初期表示はカテゴリタブに設定
+
+  // 保存元タイプの定義 (inputTypeのselectオプションと一致させる)
+  const sourceTypes = [
+    { value: 'text', label: 'テキスト' },
+    { value: 'url', label: 'URL' },
+    { value: 'x', label: 'Xの投稿' },
+    { value: 'instagram', label: 'Instagram投稿' },
+    { value: 'map', label: 'Googleマップのお店' },
+  ];
 
   useEffect(() => {
     fetchCategories();
@@ -80,7 +89,7 @@ export default function App() {
       const url = new URL(content);
       return `https://www.google.com/s2/favicons?sz=64&domain=${url.hostname}`;
     } catch {
-      return '/default-thumb.png';
+      return '/default-thumb.png'; // URLでない場合やエラーの場合のデフォルト画像
     }
   };
 
@@ -162,93 +171,135 @@ export default function App() {
   });
 
   return (
-    <div className="max-w-2xl mx-auto p-4 text-base md:text-lg">
-      <div className="flex items-center gap-2 mb-4">
-        <input
-          type="text"
-          placeholder="検索"
-          className="flex-1 border p-3 rounded"
-        />
-        <button onClick={() => { setIsModalOpen(true); setEditingId(null); }} className="text-3xl bg-blue-500 text-white px-4 py-2 rounded">＋</button>
-      </div>
-
-      <div className="flex gap-2 border-b mb-4 text-lg">
-        <button className={activeTab === 'category' ? 'border-b-2 border-black px-4 py-2' : 'px-4 py-2'} onClick={() => setActiveTab('category')}>カテゴリ</button>
-        <button className={activeTab === 'source' ? 'border-b-2 border-black px-4 py-2' : 'px-4 py-2'} onClick={() => setActiveTab('source')}>保存元</button>
-        <button className={activeTab === 'calendar' ? 'border-b-2 border-black px-4 py-2' : 'px-4 py-2'} onClick={() => setActiveTab('calendar')}>カレンダー</button>
-      </div>
-
-      {activeTab === 'calendar' && (
-        <div>
-          <Calendar value={calendarDate} onChange={setCalendarDate} className="mb-4" />
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {filteredByDate.map(item => (
-              <div key={item.id} className="border p-4 rounded">
-                <img src={getThumbnail(item.content)} className="w-full h-32 object-contain" alt="Thumbnail" />
-                <div className="font-semibold">{item.category}（{item.type}）</div>
-                <div className="truncate text-sm">
-            {item.type === 'url' ? (
-              <a href={item.content} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                {item.content}
-              </a>
-            ) : (
-              item.content
-            )}
-          </div>
-                {item.date && <div className="text-xs text-gray-700 mt-1">日時: {formatDateOnly(item.date)}</div>}
-                {item.createdAt && <div className="text-xs text-gray-500 mt-1">保存日時: {formatTimestamp(item.createdAt)}</div>}
-              </div>
-            ))}
-          </div>
+    <div className="min-h-screen bg-gray-50 text-base"> {/* 全体サイズ調整と背景色 */}
+      {/* ヘッダー部分 */}
+      <header className="flex items-center p-4 bg-white shadow-md">
+        <div className="flex-grow mr-3">
+          <input
+            type="text"
+            placeholder="検索"
+            className="w-full border p-3 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500 text-base"
+            // 検索機能は未実装なので、必要であればここに追加してください
+          />
         </div>
-      )}
+        <button
+          onClick={() => { setIsModalOpen(true); setEditingId(null); }}
+          className="flex-shrink-0 text-3xl bg-blue-500 text-white rounded-full w-12 h-12 flex items-center justify-center shadow-lg"
+        >
+          ＋
+        </button>
+      </header>
 
-      {activeTab === 'category' && groupedByCategory.map(group => (
-        <div key={group.name} className="mb-6">
-          <h3 className="font-bold text-lg mb-2">{group.name}</h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {group.items.map(item => (
-              <div key={item.id} className="border p-4 rounded">
-                <img src={getThumbnail(item.content)} className="w-full h-32 object-contain" alt="Thumbnail" />
-                <div className="font-semibold">{item.type}</div>
-                 <div className="truncate text-sm">
-            {item.type === 'url' ? (
-              <a href={item.content} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
-                {item.content}
-              </a>
-            ) : (
-              item.content
-            )}
-          </div>
-                {item.date && <div className="text-xs text-gray-700 mt-1">日時: {formatDateOnly(item.date)}</div>}
-                {item.createdAt && <div className="text-xs text-gray-500 mt-1">保存日時: {formatTimestamp(item.createdAt)}</div>}
-                <div className="mt-2 flex justify-between">
-                  <button onClick={() => startEdit(item)} className="text-blue-600">編集</button>
-                  <button onClick={() => deleteItem(item.id)} className="text-red-500">削除</button>
-                  <button onClick={() => toggleFavorite(item.id, item.favorite)}>{item.favorite ? '★' : '☆'}</button>
+      {/* タブバー部分 */}
+      <nav className="flex justify-around border-b border-gray-200 bg-white shadow-sm">
+        <button
+          className={`flex-1 py-3 text-center transition-colors duration-200 ${activeTab === 'source' ? 'border-b-4 border-blue-500 text-blue-500 font-semibold' : 'text-gray-600 hover:bg-gray-50'}`}
+          onClick={() => setActiveTab('source')}
+        >
+          保存元
+        </button>
+        <button
+          className={`flex-1 py-3 text-center transition-colors duration-200 ${activeTab === 'category' ? 'border-b-4 border-blue-500 text-blue-500 font-semibold' : 'text-gray-600 hover:bg-gray-50'}`}
+          onClick={() => setActiveTab('category')}
+        >
+          カテゴリ
+        </button>
+        <button
+          className={`flex-1 py-3 text-center transition-colors duration-200 ${activeTab === 'calendar' ? 'border-b-4 border-blue-500 text-blue-500 font-semibold' : 'text-gray-600 hover:bg-gray-50'}`}
+          onClick={() => setActiveTab('calendar')}
+        >
+          カレンダー
+        </button>
+      </nav>
+
+      {/* メインコンテンツエリア */}
+      <main className="p-4">
+        {activeTab === 'calendar' && (
+          <div>
+            <Calendar value={calendarDate} onChange={setCalendarDate} className="mb-4" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {filteredByDate.map(item => (
+                <div key={item.id} className="border p-4 rounded-lg shadow-sm bg-white">
+                  <img src={getThumbnail(item.content)} className="w-full h-32 object-contain mb-2 rounded" alt="Thumbnail" />
+                  <div className="font-semibold text-gray-800">{item.category}（{item.type}）</div>
+                  <div className="truncate text-sm text-gray-700 mb-1">
+                    {item.type === 'url' ? (
+                      <a href={item.content} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                        {item.content}
+                      </a>
+                    ) : (
+                      item.content
+                    )}
+                  </div>
+                  {item.date && <div className="text-xs text-gray-600 mt-1">日時: {formatDateOnly(item.date)}</div>}
+                  {item.createdAt && <div className="text-xs text-gray-500">保存日時: {formatTimestamp(item.createdAt)}</div>}
+                  <div className="mt-3 flex justify-between items-center">
+                    <button onClick={() => startEdit(item)} className="text-blue-600 text-sm hover:underline">編集</button>
+                    <button onClick={() => deleteItem(item.id)} className="text-red-500 text-sm hover:underline">削除</button>
+                    <button onClick={() => toggleFavorite(item.id, item.favorite)} className="text-xl">{item.favorite ? '★' : '☆'}</button>
+                  </div>
                 </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* カテゴリ表示タブ */}
+        {activeTab === 'category' && (
+          <div className="grid grid-cols-2 gap-4">
+            {categories.map(catName => (
+              <div
+                key={catName}
+                className="border p-4 rounded-lg shadow-sm bg-white flex flex-col items-center justify-center h-40 cursor-pointer hover:bg-gray-50 transition-colors duration-200"
+                // onClick={() => { /* ここに、このカテゴリのアイテム一覧を表示するロジックを追加 */ }}
+              >
+                {/* フォルダアイコン */}
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                </svg>
+                <h3 className="font-bold text-lg text-gray-800 text-center">{catName}</h3>
+                <span className="text-sm text-gray-500">{results.filter(r => r.category === catName).length}件</span>
               </div>
             ))}
           </div>
-        </div>
-      ))}
+        )}
 
+        {/* 保存元表示タブ */}
+        {activeTab === 'source' && (
+          <div className="grid grid-cols-2 gap-4">
+            {sourceTypes.map(source => (
+              <div
+                key={source.value}
+                className="border p-4 rounded-lg shadow-sm bg-white flex flex-col items-center justify-center h-40 cursor-pointer hover:bg-gray-50 transition-colors duration-200"
+                // onClick={() => { /* ここに、この保存元のアイテム一覧を表示するロジックを追加 */ }}
+              >
+                {/* フォルダアイコン */}
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-gray-400 mb-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" />
+                </svg>
+                <h3 className="font-bold text-lg text-gray-800 text-center">{source.label}</h3>
+                <span className="text-sm text-gray-500">{results.filter(r => r.type === source.value).length}件</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </main>
+
+      {/* モーダル（新規登録・編集フォーム） */}
       {isModalOpen && (
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t p-6 space-y-4 z-50">
+        <div className="fixed inset-x-0 bottom-0 h-4/5 bg-white border-t p-6 space-y-4 z-50 shadow-lg overflow-y-auto rounded-t-lg">
           <h2 className="text-xl font-bold">{editingId ? '編集' : '新規登録'}</h2>
-          <select value={inputType} onChange={e => setInputType(e.target.value)} className="w-full border rounded p-3">
-            <option value="text">テキスト</option>
-            <option value="url">URL</option>
-            <option value="x">Xの投稿</option>
-            <option value="instagram">Instagram投稿</option>
-            <option value="map">Googleマップのお店</option>
+          <select value={inputType} onChange={e => setInputType(e.target.value)} className="w-full border rounded p-3 text-base">
+            {sourceTypes.map(source => (
+              <option key={source.value} value={source.value}>{source.label}</option>
+            ))}
           </select>
-          <textarea value={content} onChange={e => setContent(e.target.value)} placeholder="内容" className="w-full border rounded p-3" />
-          <select value={category} onChange={e => setCategory(e.target.value)} className="w-full border rounded p-3">
+          <textarea value={content} onChange={e => setContent(e.target.value)} placeholder="内容" className="w-full border rounded p-3 text-base" rows="4" />
+          <select value={category} onChange={e => setCategory(e.target.value)} className="w-full border rounded p-3 text-base">
             <option value="">カテゴリを選択</option>
             {categories.map(c => <option key={c}>{c}</option>)}
           </select>
-          <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full border rounded p-3" />
+          <input type="date" value={date} onChange={e => setDate(e.target.value)} className="w-full border rounded p-3 text-base" />
 
           {/* 新しいカテゴリ追加セクション */}
           <h3 className="text-lg font-semibold mt-4">カテゴリ管理</h3>
@@ -258,14 +309,14 @@ export default function App() {
               placeholder="新しいカテゴリ名"
               value={newCategoryName}
               onChange={e => setNewCategoryName(e.target.value)}
-              className="flex-1 border rounded p-3"
+              className="flex-1 border rounded p-3 text-base"
             />
-            <button onClick={addCategory} className="bg-green-500 text-white py-3 px-4 rounded">追加</button>
+            <button onClick={addCategory} className="bg-green-500 text-white py-3 px-4 rounded text-base">追加</button>
           </div>
 
-          <div className="flex gap-2">
-            <button onClick={saveData} className="flex-1 bg-blue-600 text-white py-3 rounded">保存</button>
-            <button onClick={() => setIsModalOpen(false)} className="flex-1 bg-gray-400 text-white py-3 rounded">キャンセル</button>
+          <div className="flex gap-2 mt-4">
+            <button onClick={saveData} className="flex-1 bg-blue-600 text-white py-3 rounded text-base">保存</button>
+            <button onClick={() => setIsModalOpen(false)} className="flex-1 bg-gray-400 text-white py-3 rounded text-base">キャンセル</button>
           </div>
         </div>
       )}
