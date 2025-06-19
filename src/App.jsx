@@ -186,7 +186,15 @@ export default function App() {
               <div key={item.id} className="border p-4 rounded">
                 <img src={getThumbnail(item.content)} className="w-full h-32 object-contain" alt="Thumbnail" />
                 <div className="font-semibold">{item.category}（{item.type}）</div>
-                <div className="truncate text-sm">{item.content}</div>
+                <div className="truncate text-sm">
+            {item.type === 'url' ? (
+              <a href={item.content} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                {item.content}
+              </a>
+            ) : (
+              item.content
+            )}
+          </div>
                 {item.date && <div className="text-xs text-gray-700 mt-1">日時: {formatDateOnly(item.date)}</div>}
                 {item.createdAt && <div className="text-xs text-gray-500 mt-1">保存日時: {formatTimestamp(item.createdAt)}</div>}
               </div>
@@ -203,7 +211,15 @@ export default function App() {
               <div key={item.id} className="border p-4 rounded">
                 <img src={getThumbnail(item.content)} className="w-full h-32 object-contain" alt="Thumbnail" />
                 <div className="font-semibold">{item.type}</div>
-                <div className="truncate text-sm">{item.content}</div>
+                 <div className="truncate text-sm">
+            {item.type === 'url' ? (
+              <a href={item.content} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">
+                {item.content}
+              </a>
+            ) : (
+              item.content
+            )}
+          </div>
                 {item.date && <div className="text-xs text-gray-700 mt-1">日時: {formatDateOnly(item.date)}</div>}
                 {item.createdAt && <div className="text-xs text-gray-500 mt-1">保存日時: {formatTimestamp(item.createdAt)}</div>}
                 <div className="mt-2 flex justify-between">
